@@ -3,6 +3,8 @@ package ccloud
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/electric-saw/ccloud-client-go/ccloud/common"
@@ -187,6 +189,56 @@ func (c *ConfluentClient) DeleteKafkaCluster(KafkaClusterId string, opt KafkaClu
 	if http.StatusOK != req.StatusCode && http.StatusNoContent != req.StatusCode {
 		return fmt.Errorf("failed to delete kafka cluster: %s", req.Status)
 	}
+
+	return nil
+}
+
+type KafkaClusterConfigUpdateReq struct {
+	Data []KafkaClusterConfigUpdateData `json:"data"`
+}
+
+type KafkaClusterConfigUpdateData struct {
+	// Name required
+	Name string `json:"name"`
+
+	// one of operation / value should be set
+
+	// Operation optional ["SET","DELETE"]
+	Operation string `json:"operation,omitempty"`
+	// Value optional
+	Value string `json:"value,omitempty"`
+}
+
+func (c *ConfluentClient) UpdateKafkaClusterConfigs(restfulEndpoint, KafkaClusterId string, update *KafkaClusterConfigUpdateReq) error {
+	urlPath := fmt.Sprintf("/kafka/v3/clusters/%s/broker-configs:alter", KafkaClusterId)
+	req, err := c.doRequestByHost(restfulEndpoint, urlPath, http.MethodPost, update, nil)
+	if err != nil {
+		return err
+	}
+
+	if http.StatusNoContent != req.StatusCode {
+		return fmt.Errorf("failed to update kafka cluster: %s", req.Status)
+	}
+	defer req.Body.Close()
+	return nil
+}
+
+func (c *ConfluentClient) UpdateKafkaClusterConfig(restfulEndpoint, KafkaClusterId string, config, value string) error {
+	urlPath := fmt.Sprintf("/kafka/v3/clusters/%s/broker-configs/%s", KafkaClusterId, config)
+	req, err := c.doRequestByHost(restfulEndpoint, urlPath, http.MethodPut, map[string]string{
+		"value": value,
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("failed to update kafka cluster: %s", err)
+	}
+
+	if http.StatusNoContent != req.StatusCode {
+		body, _ := ioutil.ReadAll(req.Body)
+		log.Print(string(body))
+		return fmt.Errorf("failed to update kafka cluster: %s", req.Status)
+	}
+
+	defer req.Body.Close()
 
 	return nil
 }

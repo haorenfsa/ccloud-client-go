@@ -28,11 +28,11 @@ type specWrap struct {
 	Spec interface{} `json:"spec"`
 }
 
-func (c *ConfluentClient) doRequest(urlPath, method string, body, params interface{}) (*http.Response, error) {
+func (c *ConfluentClient) doRequestByHost(host, urlPath, method string, body, params interface{}) (*http.Response, error) {
 	client := retryablehttp.NewClient()
 	client.RetryMax = 10
 
-	url, err := url.Parse(c.BaseUrl)
+	url, err := url.Parse(host)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base url: %s", err)
 	}
@@ -68,4 +68,8 @@ func (c *ConfluentClient) doRequest(urlPath, method string, body, params interfa
 	req.URL.RawQuery = qry.Encode()
 
 	return client.Do(req)
+}
+
+func (c *ConfluentClient) doRequest(urlPath, method string, body, params interface{}) (*http.Response, error) {
+	return c.doRequestByHost(c.BaseUrl, urlPath, method, body, params)
 }
