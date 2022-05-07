@@ -115,6 +115,10 @@ type KafkaClusterCreateReq struct {
 		Id          string `json:"id"`
 		Environment string `json:"environment,omitempty"`
 	} `json:"environment"`
+	Network struct {
+		Id          string `json:"id"`
+		Environment string `json:"environment,omitempty"`
+	} `json:"network"`
 }
 
 func (c *ConfluentClient) CreateKafkaCluster(create *KafkaClusterCreateReq) (*KafkaCluster, error) {
@@ -158,7 +162,7 @@ func (c *ConfluentClient) UpdateKafkaCluster(KafkaClusterId string, update *Kafk
 		return nil, err
 	}
 
-	if http.StatusOK != req.StatusCode {
+	if http.StatusAccepted != req.StatusCode {
 		return nil, fmt.Errorf("failed to update kafka cluster: %s", req.Status)
 	}
 
